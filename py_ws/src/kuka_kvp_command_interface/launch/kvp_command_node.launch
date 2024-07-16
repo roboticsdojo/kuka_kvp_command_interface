@@ -1,0 +1,5 @@
+<?xml version="1.0"?>
+
+<launch>
+	<node name="kvp_command_node" pkg="kuka_kvp_command_interface" type="send_to_robot" /> 	
+</launch>

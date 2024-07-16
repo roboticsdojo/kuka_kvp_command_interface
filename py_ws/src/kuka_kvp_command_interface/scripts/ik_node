@@ -1,0 +1,466 @@
+#!/usr/bin/env python3
+
+#import the rospy package and the String message type
+import rospy
+from std_msgs.msg import String
+
+# moveit dependencies
+import sys
+import copy
+import moveit_commander
+import moveit_msgs.msg
+import geometry_msgs.msg
+from math import pi, tau, dist, fabs, cos
+from moveit_commander.conversions import pose_to_list
+
+
+import json
+
+world_joint_state = list()
+
+def subscriber_callback_fn(subscribedData):
+    global world_joint_state
+    
+    world_coordinates = subscribedData.data
+    rospy.loginfo(f"Received:<{type(world_coordinates)}> {world_coordinates}")
+    
+    world_joint_state = json.loads(world_coordinates)
+    
+    for index,i in enumerate(world_joint_state):
+        world_joint_state[index] = i / 57.2957795
+        
+    
+    rospy.loginfo(f"Converted Data:<{type(world_joint_state)}:list(rad)> {world_joint_state}")
+
+
+
+def initializeNode():
+    #initialize the subscriber node called 'moveit_ik_node'
+    # rospy.init_node('moveit_ik_node', anonymous=False)
+    
+    #This is to subscribe to the messages from the topic named 'robotCoordinates'
+    rospy.Subscriber('worldCoordinates', String, subscriber_callback_fn)
+    rospy.loginfo("Subscribed to the topic 'worldCoordinates'")
+    
+    
+    #rospy.spin() stops the node from exiting until the node has been shut down
+    # rospy.spin()
+
+
+
+def all_close(goal, actual, tolerance):
+    """
+    Convenience method for testing if the values in two lists are within a tolerance of each other.
+    For Pose and PoseStamped inputs, the angle between the two quaternions is compared (the angle
+    between the identical orientations q and -q is calculated correctly).
+    @param: goal       A list of floats, a Pose or a PoseStamped
+    @param: actual     A list of floats, a Pose or a PoseStamped
+    @param: tolerance  A float
+    @returns: bool
+    """
+    if type(goal) is list:
+        for index in range(len(goal)):
+            if abs(actual[index] - goal[index]) > tolerance:
+                return False
+
+    elif type(goal) is geometry_msgs.msg.PoseStamped:
+        return all_close(goal.pose, actual.pose, tolerance)
+
+    elif type(goal) is geometry_msgs.msg.Pose:
+        x0, y0, z0, qx0, qy0, qz0, qw0 = pose_to_list(actual)
+        x1, y1, z1, qx1, qy1, qz1, qw1 = pose_to_list(goal)
+        # Euclidean distance
+        d = dist((x1, y1, z1), (x0, y0, z0))
+        # phi = angle between orientations
+        cos_phi_half = fabs(qx0 * qx1 + qy0 * qy1 + qz0 * qz1 + qw0 * qw1)
+        return d <= tolerance and cos_phi_half >= cos(tolerance / 2.0)
+
+    return True
+
+
+class MoveItInterface(object):
+
+    def __init__(self):
+        super(MoveItInterface, self).__init__()
+
+
+        ## First initialize `moveit_commander`_ and a `rospy`_ node:
+        moveit_commander.roscpp_initialize(sys.argv)
+        rospy.init_node("moveit_ik_node", anonymous=True)
+        
+        #define a topic to which the messages will be published
+        coordinate_publisher = rospy.Publisher("robotCoordinates", String, queue_size=10)
+        rospy.loginfo(f"Created Publisher: 'robotCoordinates'")
+        
+
+        ## Instantiate a `RobotCommander`_ object. Provides information such as the robot's
+        ## kinematic model and the robot's current joint states
+        robot = moveit_commander.RobotCommander()
+
+        ## Instantiate a `PlanningSceneInterface`_ object.  This provides a remote interface
+        ## for getting, setting, and updating the robot's internal understanding of the
+        ## surrounding world:
+        scene = moveit_commander.PlanningSceneInterface()
+
+        ## Instantiate a `MoveGroupCommander`_ object.  This object is an interface
+        ## to a planning group (group of joints).
+        ## This interface can be used to plan and execute motions:
+        group_name = "kuka_arm"
+        move_group = moveit_commander.MoveGroupCommander(group_name)
+
+        ## Create a `DisplayTrajectory`_ ROS publisher which is used to display
+        ## trajectories in Rviz:
+        display_trajectory_publisher = rospy.Publisher(
+            "/move_group/display_planned_path",
+            moveit_msgs.msg.DisplayTrajectory,
+            queue_size=20,
+        )
+
+ 
+        ## Getting Basic Information
+        ## ^^^^^^^^^^^^^^^^^^^^^^^^^
+        # We can get the name of the reference frame for this robot:
+        planning_frame = move_group.get_planning_frame()
+        print("============ Planning frame: %s" % planning_frame)
+
+        # We can also print the name of the end-effector link for this group:
+        eef_link = move_group.get_end_effector_link()
+        print("============ End effector link: %s" % eef_link)
+
+        # We can get a list of all the groups in the robot:
+        group_names = robot.get_group_names()
+        print("============ Available Planning Groups:", robot.get_group_names())
+
+        # Sometimes for debugging it is useful to print the entire state of the
+        # robot:
+        print("============ Printing robot state")
+        print(robot.get_current_state())
+        print("")
+  
+
+        # Misc variables
+        self.box_name = ""
+        self.robot = robot
+        self.scene = scene
+        self.move_group = move_group
+        self.display_trajectory_publisher = display_trajectory_publisher
+        self.planning_frame = planning_frame
+        self.eef_link = eef_link
+        self.group_names = group_names
+        self.coordinate_publisher = coordinate_publisher
+
+    def go_to_joint_state(self, new_joint_goal):
+        # Copy class variables to local variables to make the web tutorials more clear.
+        # In practice, you should use the class variables directly unless you have a good
+        # reason not to.
+        move_group = self.move_group
+
+       
+        ## Planning to a Joint Goal
+        ## ^^^^^^^^^^^^^^^^^^^^^^^^
+        # We get the joint values from the group and change some of the values:
+        joint_state = move_group.get_current_joint_values()
+        print(f"Current Joint State: {joint_state}")
+        
+        # joint_goal[0] = 0
+        # joint_goal[1] = -tau / 8
+        # joint_goal[2] = 0
+        # joint_goal[3] = -tau / 4
+        # joint_goal[4] = 0
+        # joint_goal[5] = tau / 6  # 1/6 of a turn
+        # # joint_goal[6] = 0
+        # joint_goal[0] = 88.3618088 / 57.2957795
+        # joint_goal[1] = -103.051071 / 57.2957795
+        # joint_goal[2] = 101.322342 / 57.2957795
+        # joint_goal[3] = -87.7924  / 57.2957795
+        # joint_goal[4] = 5.59045029 / 57.2957795
+        # joint_goal[5] = -2.81264663 / 57.2957795 # 1/6 of a turn
+        # joint_goal[6] = 0
+        joint_state[0] = new_joint_goal[0]
+        joint_state[1] = new_joint_goal[1]
+        joint_state[2] = new_joint_goal[2]
+        joint_state[3] = new_joint_goal[3]
+        joint_state[4] = new_joint_goal[4]
+        joint_state[5] = new_joint_goal[5]
+        print(f"Pre-formatted Joint Goal: {joint_state}")
+
+        # The go command can be called with joint values, poses, or without any
+        # parameters if you have already set the pose or joint target for the group
+        
+        if joint_state:
+            move_group.go(joint_state, wait=True)
+
+            # Calling ``stop()`` ensures that there is no residual movement
+            move_group.stop()
+
+
+            # For testing:
+            current_joints = move_group.get_current_joint_values()
+            state = all_close(joint_state, current_joints, 0.01)
+            
+            if state:
+                rospy.loginfo("Reached the Joint Goal")
+            else:
+                rospy.loginfo("Failed to reach the Joint Goal")
+                
+        return joint_state
+    
+    def convert_joint_positions_to_pose(self, joint_values):
+        move_group = self.move_group
+        
+        # Set the joint values
+        move_group.set_joint_value_target(joint_values)
+        
+        # Calculate the forward kinematics
+        pose = move_group.get_current_pose().pose
+        print(f"Joint Position to Pose: {pose}")
+        
+        
+        return pose
+    
+    def convert_pose_to_joint_positions(self, pose):
+        move_group = self.move_group
+        
+        # Set the pose target
+        move_group.set_pose_target(pose)
+        
+        # Calculate the inverse kinematics
+        joint_values = move_group.get_current_joint_values()
+        success = move_group.compute_cartesian_path([pose], 0.01, 0.0)
+        if success:
+            # plan = move_group.plan()
+            # joint_values = plan.joint_trajectory.points[-1].positions
+            move_group.go(wait=True)
+        
+        joint_values = move_group.get_current_joint_values()
+        # Clear the pose target
+        move_group.clear_pose_targets()
+        print(f"Pose to Joint Position: {joint_values}")
+        
+        return joint_values
+        
+
+    def go_to_pose_goal(self):
+        move_group = self.move_group
+
+      
+        ## Planning to a Pose Goal
+        ## ^^^^^^^^^^^^^^^^^^^^^^^
+        ## We can plan a motion for this group to a desired pose for the
+        ## end-effector:
+        pose_goal = geometry_msgs.msg.Pose()
+        pose_goal.orientation.w = 1.0
+        pose_goal.position.x = 0.4
+        pose_goal.position.y = 0.1
+        pose_goal.position.z = 0.4
+        # pose_goal.orientation.w = 0.5346
+        # pose_goal.position.x = 0.0210
+        # pose_goal.position.y = -0.4303
+        # pose_goal.position.z = 0.8833
+
+        move_group.set_pose_target(pose_goal)
+
+        ## Now, we call the planner to compute the plan and execute it.
+        # `go()` returns a boolean indicating whether the planning and execution was successful.
+        success = move_group.go(wait=True)
+        # Calling `stop()` ensures that there is no residual movement
+        move_group.stop()
+        # It is always good to clear your targets after planning with poses.
+        # Note: there is no equivalent function for clear_joint_value_targets().
+        move_group.clear_pose_targets()
+
+        
+        # For testing:
+        # Note that since this section of code will not be included in the tutorials
+        # we use the class variable rather than the copied state variable
+        current_pose = self.move_group.get_current_pose().pose
+        return all_close(pose_goal, current_pose, 0.01)
+
+    def plan_cartesian_path(self, scale=1):
+        # Copy class variables to local variables to make the web tutorials more clear.
+        # In practice, you should use the class variables directly unless you have a good
+        # reason not to.
+        move_group = self.move_group
+
+       
+        ## Cartesian Paths
+        ## ^^^^^^^^^^^^^^^
+        ## You can plan a Cartesian path directly by specifying a list of waypoints
+        ## for the end-effector to go through. If executing  interactively in a
+        ## Python shell, set scale = 1.0.
+        ##
+        waypoints = []
+
+        wpose = move_group.get_current_pose().pose
+        wpose.position.z -= scale * 0.1  # First move up (z)
+        wpose.position.y += scale * 0.2  # and sideways (y)
+        waypoints.append(copy.deepcopy(wpose))
+
+        wpose.position.x += scale * 0.1  # Second move forward/backwards in (x)
+        waypoints.append(copy.deepcopy(wpose))
+
+        wpose.position.y -= scale * 0.1  # Third move sideways (y)
+        waypoints.append(copy.deepcopy(wpose))
+
+        # We want the Cartesian path to be interpolated at a resolution of 1 cm
+        # which is why we will specify 0.01 as the eef_step in Cartesian
+        # translation.  We will disable the jump threshold by setting it to 0.0,
+        # ignoring the check for infeasible jumps in joint space, which is sufficient
+        # for this tutorial.
+        (plan, fraction) = move_group.compute_cartesian_path(
+            waypoints, 0.01, 0.0  # waypoints to follow  # eef_step
+        )  # jump_threshold
+
+        # Note: We are just planning, not asking move_group to actually move the robot yet:
+        return plan, fraction
+
+
+    def display_trajectory(self, plan):
+        
+        robot = self.robot
+        display_trajectory_publisher = self.display_trajectory_publisher
+
+        ## Displaying a Trajectory
+        ## ^^^^^^^^^^^^^^^^^^^^^^^
+        ## You can ask RViz to visualize a plan (aka trajectory) for you. But the
+        ## group.plan() method does this automatically so this is not that useful
+        ## here (it just displays the same trajectory again):
+        ##
+        ## A `DisplayTrajectory`_ msg has two primary fields, trajectory_start and trajectory.
+        ## We populate the trajectory_start with our current robot state to copy over
+        ## any AttachedCollisionObjects and add our plan to the trajectory.
+        display_trajectory = moveit_msgs.msg.DisplayTrajectory()
+        display_trajectory.trajectory_start = robot.get_current_state()
+        display_trajectory.trajectory.append(plan)
+        # Publish
+        display_trajectory_publisher.publish(display_trajectory)
+
+        ## END_SUB_TUTORIAL
+
+    def execute_plan(self, plan):
+        move_group = self.move_group
+
+        ## Executing a Plan
+        ## ^^^^^^^^^^^^^^^^
+        ## Use execute if you would like the robot to follow
+        ## the plan that has already been computed:
+        move_group.execute(plan, wait=True)
+
+        ## **Note:** The robot's current joint state must be within some tolerance of the
+        ## first waypoint in the `RobotTrajectory`_ or ``execute()`` will fail
+
+
+def messagePub():
+    
+    #define a topic to which the messages will be published
+    coordinate_publisher = rospy.Publisher("robotCoordinates", String, queue_size=10)
+    
+    # TODO: Remove coz it doesn't make sense
+    #initialize the Publisher node. 
+    # rospy.init_node("coordinates_sim_node")
+    
+    #publishes at a rate of 1 messages every 8 seconds
+    interval = 1/8
+    rate = rospy.Rate(interval)
+    
+    #Keep publishing the messages until the user interrupts 
+    while not rospy.is_shutdown():
+
+        #display the coordinates on the terminal
+        rospy.loginfo(f"Published: {coordinates}")
+        
+        #publish the coordinates to the topic
+        coordinate_publisher.publish(coordinates)
+        
+        #rate.sleep() will wait enough until the node publishes the     message to the topic
+        rate.sleep()
+        
+        
+def format_joint_states(joint_states):
+    
+    if joint_states:
+        a1 = joint_states[0]
+        a2 = joint_states[1]
+        a3 = joint_states[2]
+        a4 = joint_states[3]
+        a5 = joint_states[4]
+        a6 = joint_states[5]
+        
+        joint_state1 = "{E6AXIS: A1 88.3618088, A2 -103.051071, A3 101.322342, A4 -87.7924, A5 5.59045029, A6 -2.81264663, E1 0.0, E2 0.0, E3 0.0, E4 0.0, E5 0.0, E6 0.0}"
+        
+        joint_state2 = "{E6AXIS: A1 " + f"{a1}," + " A2 " + f"{a2}," + " A3 "+f"{a3}," + " A4 " + f"{a4}," + " A5 " + f"{a5}," + " A6 " + f"{a6}," + " E1 0.0, E2 0.0, E3 0.0, E4 0.0, E5 0.0, E6 0.0}"
+        
+        # Will obviously fail!
+        # if joint_state1 == joint_state2:
+        #     print("FOrmatting successful")
+        # else:
+        #     print("Formatting Failed")
+            
+        return joint_state2
+
+    else:
+        print("No data")
+
+
+def radians_to_degrees(joint_states: list):
+    degrees_list = []
+    
+    for index, i in enumerate(joint_states):
+        degrees_list.append(i * 57.2957795)
+        
+    return degrees_list
+
+
+
+
+if __name__ == "__main__":
+    try:
+        
+        # Create an instance of MoveItInterface class
+        moveit_interface = MoveItInterface()
+        
+        initializeNode()
+        
+        
+        # # Call the convert_joint_positions_to_pose method
+        # pose = moveit_interface.convert_joint_positions_to_pose(joint_goal)
+        
+        # # Call the convert_pose_to_joint_positions method
+        # # The important bit: pose is derived from the vision stack
+        # joint_values = moveit_interface.convert_pose_to_joint_positions(pose)
+
+        #publishes at a rate of 1 messages every second
+        interval = 1
+        rate = rospy.Rate(interval)
+
+        #Keep publishing the messages until the user interrupts 
+        while not rospy.is_shutdown():
+            
+            if world_joint_state:
+                # Call the go_to_joint_state method
+                joint_goal = moveit_interface.go_to_joint_state(world_joint_state)
+                
+                joint_goal_degrees = radians_to_degrees(joint_goal)
+                
+                formatted_joint_goal = format_joint_states(joint_goal)
+
+                
+                #publish the coordinates to the topic
+                moveit_interface.coordinate_publisher.publish(formatted_joint_goal)
+                #display the coordinates on the terminal
+                rospy.loginfo(f"Published: {formatted_joint_goal}")
+            else:
+                rospy.loginfo(f"PUBLISHING NO DATA")
+            
+            #rate.sleep() will wait enough until the node publishes the message to the topic
+            rate.sleep()
+            
+        
+        # Call the go_to_pose_goal method
+        # moveit_interface.go_to_pose_goal()
+        #rospy.spin() stops the node from exiting until the node has been shut down
+        rospy.spin()
+        
+    #capture the Interrupt signals
+    except rospy.ROSInterruptException:
+        pass

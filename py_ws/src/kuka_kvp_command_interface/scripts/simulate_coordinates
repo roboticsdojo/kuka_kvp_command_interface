@@ -1,0 +1,62 @@
+#!/usr/bin/env python3
+
+#import the rospy package and the String message type
+import rospy
+from std_msgs.msg import String
+
+
+
+demo_coordinates = {
+    "pos1" : "{E6AXIS: A1 88.3618088, A2 -103.051071, A3 101.322342, A4 -87.7924, A5 5.59045029, A6 -2.81264663, E1 0.0, E2 0.0, E3 0.0, E4 0.0, E5 0.0, E6 0.0}",
+    "pos2" : "{E6AXIS: A1 0.7078838, A2 -90.1117859, A3 90.1368179, A4 0.465518475, A5 90.5599060, A6 -0.439839125, E1 0.0, E2 0.0, E3 0.0, E4 0.0, E5 0.0, E6 0.0}",
+    "pos3" : "{E6AXIS: A1 54.5582390, A2 -88.8632584, A3 85.8678, A4 -50.8138504, A5 75.1457214, A6 -4.15372562, E1 0.0, E2 0.0, E3 0.0, E4 0.0, E5 0.0, E6 0.0}",
+    "pos4" : "{E6AXIS: A1 30.0376320, A2 -99.7417297, A3 135.647110, A4 -75.3280411, A5 35.5270500, A6 23.6884060, E1 0.0, E2 0.0, E3 0.0, E4 0.0, E5 0.0, E6 0.0}",
+    "pos5" : "{E6AXIS: A1 36.6157303, A2 -96.6715698, A3 52.1718979, A4 -38.6913605, A5 93.3302078, A6 -45.0719490, E1 0.0, E2 0.0, E3 0.0, E4 0.0, E5 0.0, E6 0.0}",
+    "pos6" : "{E6AXIS: A1 -0.722357035, A2 -111.312195, A3 110.423820, A4 -4.57662725, A5 90.9246521, A6 10.3348379, E1 0.0, E2 0.0, E3 0.0, E4 0.0, E5 0.0, E6 0.0}",
+}
+
+
+
+
+#function to publish messages at the rate of 2 messages per second
+def messagePub():
+    
+    #define a topic to which the messages will be published
+    coordinate_publisher = rospy.Publisher("robotCoordinates", String, queue_size=10)
+    
+    #initialize the Publisher node. 
+    rospy.init_node("coordinates_sim_node")
+    
+    #publishes at a rate of 1 messages every 8 seconds
+    interval = 1/8
+    rate = rospy.Rate(interval)
+    
+    #Keep publishing the messages until the user interrupts 
+    while not rospy.is_shutdown():
+        counter = 0
+        for key in demo_coordinates:
+            if counter < len(demo_coordinates):
+                coordinates = demo_coordinates[key]
+                #display the coordinates on the terminal
+                rospy.loginfo(f"Published:[{key}] {coordinates}")
+                
+                #publish the coordinates to the topic
+                coordinate_publisher.publish(coordinates)
+                
+                #rate.sleep() will wait enough until the node publishes the     message to the topic
+                rate.sleep()
+                
+                # increment the counter
+                counter += 1
+            else:
+                break
+        
+        
+        
+
+if __name__ == "__main__":
+    try:
+        messagePub()
+    #capture the Interrupt signals
+    except rospy.ROSInterruptException:
+        pass

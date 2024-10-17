@@ -27,6 +27,10 @@ This ROS1 (Robot Operating System) package provides an interface for the KUKA Ag
 
 ### 1. Robot Ethernet Interface Setup
 
+Try following the instructions in the links below. Better documentation is coming soon
+- [Connecting KUKA robots to your windows PC](https://camerabotics.com/help-center/hardware-setup/robots/kuka/connecting-kuka-robots-to-your-windows-pc/)
+- [KUKA Setup Instructions](https://docs.mech-mind.net/en/robot-integration/latest/standard-interface-robot/kuka-setup-instructions.html)
+
 ### 2. Robot KVP Server Setup
 
 **You MUST log in as an Administrator in the Teach Pendant for the steps below.**

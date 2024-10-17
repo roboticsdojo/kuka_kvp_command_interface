@@ -175,6 +175,6 @@ To use the package and its dependencies, you need to run several commands in dif
 
 ## Contact
 
-- **Lenny Ng'an'ga** 
+- **Maintainer: Lenny Ng'an'ga** 
 	- X (formerly Twitter): [@codewithlenny](https://x.com/@codewithlenny)
 	- LinkedIn: [Lenny Ng'ang'a](https://www.linkedin.com/in/lenny-nganga-wanjiru/)

@@ -1,6 +1,6 @@
 &ACCESS RVP
 &REL 5
-DEF test_kvp_rdk()
+DEF test_kvp_krl()
   BAS(#INITMOV,0)
   PTP $AXIS_ACT
 

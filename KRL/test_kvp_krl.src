@@ -1,0 +1,52 @@
+&ACCESS RVP
+&REL 5
+DEF test_kvp_rdk()
+  BAS(#INITMOV,0)
+  PTP $AXIS_ACT
+
+  
+  $ORI_TYPE = #VAR ; orientation is defined as a variable
+  $CIRC_TYPE = #BASE ; circular motion is defined relative to the base frame
+  $VEL.ORI1 = 200
+  $VEL.ORI2 = 200
+  $ACC.ORI1 = 100
+  $ACC.ORI2 = 100
+
+  ; velocity and acceleration for cartesion point motion
+  $VEL.CP = 3
+  $ACC.CP = 10
+
+  $BASE = {FRAME: X 0, Y 0, Z 0, A 0, B 0, C 0}
+  $TOOL = {FRAME: X 0, Y 0, Z 0, A 0, B 0, C 0}
+
+  $ADVANCE = 0 ; robot will not advance to the next point until the previous point is reached
+  $APO.CPTP = 0 ; continuous path mode for point-to-point motions
+  $APO.CDIS = 0 ; continuous path mode for circular motions
+
+  COM_ROUNDM = -1 ; rounding mode not used for communication
+  COM_ACTCNT = 0 ; communication action counter
+
+  WHILE TRUE
+    MainLoop()
+  ENDWHILE
+END
+
+DEF MainLoop()
+
+    ; Move Joints
+    PTP COM_E6AXIS C_PTP
+    ; PTP COM_E6AXIS
+
+
+    ; Move Linear
+    ; LIN COM_E6POS C_DIS
+    ; LIN COM_E6POS
+
+    ; Move Circular
+    ; CIRC COM_POS,COM_E6POS C_DIS
+    ; CIRC COM_POS,COM_E6POS
+
+END
+
+
+

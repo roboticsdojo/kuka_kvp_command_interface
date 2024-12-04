@@ -18,6 +18,9 @@ import json
 
 world_joint_state = list()
 
+
+# NOTE: Refactor -> deg2rad function
+# -> world joint state is meaningless.
 def subscriber_callback_fn(subscribedData):
     global world_joint_state
     
@@ -33,7 +36,7 @@ def subscriber_callback_fn(subscribedData):
     rospy.loginfo(f"Converted Data:<{type(world_joint_state)}:list(rad)> {world_joint_state}")
 
 
-
+# NOTE: Refactor -> subscriber initialization
 def initializeNode():
     #initialize the subscriber node called 'moveit_ik_node'
     # rospy.init_node('moveit_ik_node', anonymous=False)
@@ -47,7 +50,7 @@ def initializeNode():
     # rospy.spin()
 
 
-
+# From MoveIt Tutorials
 def all_close(goal, actual, tolerance):
     """
     Convenience method for testing if the values in two lists are within a tolerance of each other.
@@ -78,6 +81,7 @@ def all_close(goal, actual, tolerance):
     return True
 
 
+# NOTE: Refactor -> Put Subscriber here
 class MoveItInterface(object):
 
     def __init__(self):
@@ -90,7 +94,7 @@ class MoveItInterface(object):
         
         #define a topic to which the messages will be published
         coordinate_publisher = rospy.Publisher("robotCoordinates", String, queue_size=10)
-        rospy.loginfo(f"Created Publisher: 'robotCoordinates'")
+        rospy.loginfo("Created Publisher: 'robotCoordinates'")
         
 
         ## Instantiate a `RobotCommander`_ object. Provides information such as the robot's
@@ -149,6 +153,7 @@ class MoveItInterface(object):
         self.group_names = group_names
         self.coordinate_publisher = coordinate_publisher
 
+    # NOTE: Modification here seems to be conversion of joint values from degrees to radians
     def go_to_joint_state(self, new_joint_goal):
         # Copy class variables to local variables to make the web tutorials more clear.
         # In practice, you should use the class variables directly unless you have a good
@@ -182,7 +187,7 @@ class MoveItInterface(object):
         joint_state[3] = new_joint_goal[3]
         joint_state[4] = new_joint_goal[4]
         joint_state[5] = new_joint_goal[5]
-        print(f"Pre-formatted Joint Goal: {joint_state}")
+        print(f"[go_to_joint_state] Modified Joint Goal: {joint_state}")
 
         # The go command can be called with joint values, poses, or without any
         # parameters if you have already set the pose or joint target for the group
@@ -205,6 +210,7 @@ class MoveItInterface(object):
                 
         return joint_state
     
+    # smart way to use MoveIt
     def convert_joint_positions_to_pose(self, joint_values):
         move_group = self.move_group
         
@@ -225,14 +231,18 @@ class MoveItInterface(object):
         move_group.set_pose_target(pose)
         
         # Calculate the inverse kinematics
-        joint_values = move_group.get_current_joint_values()
+        joint_values = move_group.get_current_joint_values() # Before IK
+        print(f"[convert_pose_to_joint_positions - before IK]: {joint_values}")
+        
         success = move_group.compute_cartesian_path([pose], 0.01, 0.0)
         if success:
             # plan = move_group.plan()
             # joint_values = plan.joint_trajectory.points[-1].positions
             move_group.go(wait=True)
         
-        joint_values = move_group.get_current_joint_values()
+        joint_values = move_group.get_current_joint_values() # After IK
+        print(f"[convert_pose_to_joint_positions - after IK]: {joint_values}")
+        
         # Clear the pose target
         move_group.clear_pose_targets()
         print(f"Pose to Joint Position: {joint_values}")
@@ -240,6 +250,11 @@ class MoveItInterface(object):
         return joint_values
         
 
+    # NOTE: Refactor -> should be similar to go_to_joint_state
+    # -> Currently hard-coded!
+    # Not called anywhere!
+    # NOTE: Experiment 2
+    # ERROR: There is no end effector to set the pose for
     def go_to_pose_goal(self):
         move_group = self.move_group
 
@@ -274,6 +289,7 @@ class MoveItInterface(object):
         # Note that since this section of code will not be included in the tutorials
         # we use the class variable rather than the copied state variable
         current_pose = self.move_group.get_current_pose().pose
+        rospy.loginfo(f"[go_to_pose_goal] : {current_pose}")
         return all_close(pose_goal, current_pose, 0.01)
 
     def plan_cartesian_path(self, scale=1):
@@ -349,7 +365,7 @@ class MoveItInterface(object):
         ## **Note:** The robot's current joint state must be within some tolerance of the
         ## first waypoint in the `RobotTrajectory`_ or ``execute()`` will fail
 
-
+# NOTE: Re-initialization of publisher
 def messagePub():
     
     #define a topic to which the messages will be published
@@ -367,7 +383,7 @@ def messagePub():
     while not rospy.is_shutdown():
 
         #display the coordinates on the terminal
-        rospy.loginfo(f"Published: {coordinates}")
+        rospy.loginfo(f"[messagePub] Published: {coordinates}")
         
         #publish the coordinates to the topic
         coordinate_publisher.publish(coordinates)
@@ -423,9 +439,10 @@ if __name__ == "__main__":
         
         
         # # Call the convert_joint_positions_to_pose method
-        # pose = moveit_interface.convert_joint_positions_to_pose(joint_goal)
+        # my_pose = moveit_interface.convert_joint_positions_to_pose(joint_goal)
         
         # # Call the convert_pose_to_joint_positions method
+        # NOTE: Vision Stack??
         # # The important bit: pose is derived from the vision stack
         # joint_values = moveit_interface.convert_pose_to_joint_positions(pose)
 
@@ -437,29 +454,59 @@ if __name__ == "__main__":
         while not rospy.is_shutdown():
             
             if world_joint_state:
+                print("Blah blah")
                 # Call the go_to_joint_state method
-                joint_goal = moveit_interface.go_to_joint_state(world_joint_state)
+                # joint_goal = moveit_interface.go_to_joint_state(world_joint_state)
                 
-                joint_goal_degrees = radians_to_degrees(joint_goal)
+                # joint_goal_degrees = radians_to_degrees(joint_goal)
                 
-                formatted_joint_goal = format_joint_states(joint_goal)
+                # formatted_joint_goal = format_joint_states(joint_goal)
+                
+                # NOTE: Experiment 1
+                # ERROR: There is no end effector to get the pose of
+                # my_pose = moveit_interface.convert_joint_positions_to_pose(world_joint_state)
+                # my_pose = moveit_interface.move_group.get_current_pose().pose
+                
+                # NOTE: Experiment 2
+                # ERROR: There is no end effector to set the pose for
+                # pose_goal = geometry_msgs.msg.Pose()
+                # pose_goal.orientation.w = 1.0
+                # pose_goal.position.x = 0.4
+                # pose_goal.position.y = 0.1
+                # pose_goal.position.z = 0.4
+                # moveit_interface.move_group.set_pose_target(pose_goal)
+                # my_pose = moveit_interface.move_group.get_current_pose().pose
+                # rospy.loginfo(f"[MAIN LOOP] my_pose: {my_pose}")
+                
+                # NOTE: Experiment 3
+                # Works!!!
+                # pose_goal = geometry_msgs.msg.Pose()
+                # pose_goal.orientation.w = 1.0
+                # pose_goal.position.x = 0.4
+                # pose_goal.position.y = 0.1
+                # pose_goal.position.z = 0.4
+                # moveit_interface.move_group.set_pose_target(pose_goal, "tool0")
+                my_pose = moveit_interface.move_group.get_current_pose("tool0").pose
+                rospy.loginfo(f"[MAIN LOOP] my_pose: {my_pose}")
 
                 
                 #publish the coordinates to the topic
-                moveit_interface.coordinate_publisher.publish(formatted_joint_goal)
+                # moveit_interface.coordinate_publisher.publish(formatted_joint_goal)
                 #display the coordinates on the terminal
-                rospy.loginfo(f"Published: {formatted_joint_goal}")
+                # rospy.loginfo(f"[MAIN LOOP] Published: {formatted_joint_goal}")
             else:
                 rospy.loginfo(f"PUBLISHING NO DATA")
-            
+                
+                # # Call the go_to_pose_goal method
+                # moveit_interface.go_to_pose_goal()
+                # #rospy.spin() stops the node from exiting until the node has been shut down
+                # rospy.spin()
+                
             #rate.sleep() will wait enough until the node publishes the message to the topic
             rate.sleep()
             
         
-        # Call the go_to_pose_goal method
-        # moveit_interface.go_to_pose_goal()
-        #rospy.spin() stops the node from exiting until the node has been shut down
-        rospy.spin()
+       
         
     #capture the Interrupt signals
     except rospy.ROSInterruptException:

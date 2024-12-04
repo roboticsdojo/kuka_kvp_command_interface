@@ -105,7 +105,7 @@ class MoveItInterface(object):
         ## Instantiate a `MoveGroupCommander`_ object.  This object is an interface
         ## to a planning group (group of joints).
         ## This interface can be used to plan and execute motions:
-        group_name = "kuka_arm"
+        group_name = "manipulator"
         move_group = moveit_commander.MoveGroupCommander(group_name)
 
         ## Create a `DisplayTrajectory`_ ROS publisher which is used to display
@@ -430,7 +430,7 @@ if __name__ == "__main__":
         # joint_values = moveit_interface.convert_pose_to_joint_positions(pose)
 
         #publishes at a rate of 1 messages every second
-        interval = 1
+        interval = 0.5
         rate = rospy.Rate(interval)
 
         #Keep publishing the messages until the user interrupts 

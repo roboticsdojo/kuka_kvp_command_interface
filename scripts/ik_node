@@ -224,31 +224,59 @@ class MoveItInterface(object):
         
         return pose
     
+    # NOTE: Works as expected but doesn't solve the problem. Hence the convert_pose_to_joint_positions_ik below
     def convert_pose_to_joint_positions(self, pose):
         move_group = self.move_group
         
         # Set the pose target
-        move_group.set_pose_target(pose)
+        move_group.set_pose_target(pose, "tool0")
         
         # Calculate the inverse kinematics
         joint_values = move_group.get_current_joint_values() # Before IK
-        print(f"[convert_pose_to_joint_positions - before IK]: {joint_values}")
+        print(f"[convert_pose_to_joint_positions - joint_values before IK]: {joint_values}")
         
-        success = move_group.compute_cartesian_path([pose], 0.01, 0.0)
-        if success:
-            # plan = move_group.plan()
-            # joint_values = plan.joint_trajectory.points[-1].positions
-            move_group.go(wait=True)
+        # success = move_group.compute_cartesian_path([pose], 0.01, 0.0)
+        # if success:
+        #     # plan = move_group.plan()
+        #     # joint_values = plan.joint_trajectory.points[-1].positions
+        #     move_group.go(wait=True)
+        
+        (plan, fraction) = move_group.compute_cartesian_path([pose], 0.01, False)
+        
+        print(f"\n\n [convert_pose_to_joint_positions] Plan: {plan}")
+        print(f"\n\n [convert_pose_to_joint_positions] fraction: {fraction}")
+    
+        if fraction == 1.0:  # Check if path was fully planned
+            move_group.execute(plan, wait=True)
         
         joint_values = move_group.get_current_joint_values() # After IK
-        print(f"[convert_pose_to_joint_positions - after IK]: {joint_values}")
+        print(f"[convert_pose_to_joint_positions - joint_values after IK]: {joint_values}")
         
         # Clear the pose target
         move_group.clear_pose_targets()
         print(f"Pose to Joint Position: {joint_values}")
         
         return joint_values
+    
+    def convert_pose_to_joint_positions_ik(self, pose):
+        move_group = self.move_group
         
+        # Create a RobotState instance for the current robot state
+        robot_state = move_group.get_current_state()
+        
+        # Set the target pose for IK
+        # joint_model_group = move_group.get_joint_model_group("manipulator")  # Replace with your actual group name
+        success = robot_state.set_from_ik("manipulator", pose)
+        
+        if success:
+            # Retrieve joint values after IK computation
+            joint_values = robot_state.get_joint_group_positions(joint_model_group)
+            print(f"[convert_pose_to_joint_positions_ik - joint_values after IK]: {joint_values}")
+        else:
+            print("[convert_pose_to_joint_positions_ik] Failed to find IK solution.")
+            return None  # Or handle failure as needed
+        
+        return joint_values    
 
     # NOTE: Refactor -> should be similar to go_to_joint_state
     # -> Currently hard-coded!
@@ -488,6 +516,18 @@ if __name__ == "__main__":
                 # moveit_interface.move_group.set_pose_target(pose_goal, "tool0")
                 my_pose = moveit_interface.move_group.get_current_pose("tool0").pose
                 rospy.loginfo(f"[MAIN LOOP] my_pose: {my_pose}")
+                
+                # NOTE: Experiment 4
+                # Works!!! To some extent
+                # Convert Pose to joint_values
+                # my_joint_values = moveit_interface.convert_pose_to_joint_positions(my_pose)
+                # rospy.loginfo(f"[MAIN LOOP] my_joint_values: {my_joint_values}")
+                
+                # NOTE: Experiment 5
+                # Convert Pose to joint_values using computed solution rather than moving robot
+                my_joint_values_ik = moveit_interface.convert_pose_to_joint_positions_ik(my_pose)
+                rospy.loginfo(f"[MAIN LOOP] my_joint_values_ik: {my_joint_values_ik}")
+                
 
                 
                 #publish the coordinates to the topic

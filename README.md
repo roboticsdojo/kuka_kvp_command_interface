@@ -87,9 +87,8 @@ source devel/setup.bash
 ```bash
 cd robot_ws/src
 git clone https://github.com/ros-industrial/kuka_experimental.git
-cd ..
-rosdep install --from-paths src --ignore-src
-catkin_make
+rosdep install -y --from-paths . --ignore-src
+
 ```
 
 #### b. kuka_kvp_hw_interface
@@ -97,13 +96,10 @@ catkin_make
 **Importance:** getting access to the robot's joint states
 
 ```bash
-cd robot_ws/src
 git clone https://github.com/itk-thrivaldi/kuka_kvp_hw_interface
-cd ..
-rosdep install --from-paths src --ignore-src
+rosdep install -y --from-paths . --ignore-src
 
-# Edit params.yaml to your robot's IP Address
-catkin_make
+# Remember to Edit params.yaml to your robot's IP Address
 ```
 - Ensure that you've edited the `params.yaml` file in the `kuka_kvp_hw_interface/config/` directory to include your robot's IP address.
 	- For example: Change from the default address **`10.0.0.1`** to **`172.31.1.147`**
@@ -115,8 +111,10 @@ catkin_make
 ```bash
 cd robot_ws/src
 git clone https://github.com/codewithlennylen/kuka-kvp-command
+rosdep install -y --from-paths . --ignore-src
+
+# Build packages
 cd ..
-rosdep install --from-paths src --ignore-src
 catkin_make
 ```
 

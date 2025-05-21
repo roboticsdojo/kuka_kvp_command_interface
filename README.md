@@ -6,7 +6,8 @@
 
 ## Overview
 
-This ROS1 (Robot Operating System) package provides an interface for the KUKA Agilus R900-2 robot arm. It enables users to programmatically control the arm, facilitating the development of complex automation scripts and programs within the ROS ecosystem. The package is based on the KVP (KUKA Variable Protocol) for communication with the robot controller. It was originally inspired by:
+This ROS1 (Robot Operating System) package provides an interface for the KUKA Agilus R900-2 robot arm. It enables users to programmatically control the arm, facilitating the development of complex automation scripts and programs within the ROS ecosystem. The package is based on the KVP (KUKA Variable Protocol) for communication with the robot controller. It was inspired by the work done by:
+- [KUKA KVP Proxy]() - ITK Thrivaldi
 - [kuka_kvp_hw_interface](https://github.com/itk-thrivaldi/kuka_kvp_hw_interface)
 - kvp protocol
 
@@ -14,14 +15,15 @@ This ROS1 (Robot Operating System) package provides an interface for the KUKA Ag
 
 - ROS1 Interface of the KUKA Agilus R900-2 arm
 - Tested on ROS1 Noetic & Ubuntu 20.04
-- KVP protocol implementation for robot communication
+- KVP protocol utilisation for robot command and control
+- Joint state feedback
 
 ## Prerequisites
 
 - ROS1 Noetic
 - Ubuntu 20.04
 - KUKA Agilus R900-2 robot arm and controller
-	- Tested on the KRC4 controller
+	- Tested on the KRC4 Compact controller
 
 ## Installation and Setup
 
@@ -78,35 +80,12 @@ catkin_make
 source devel/setup.bash
 ```
 
-### 2. Package Dependencies
+### 5. Package Setup
 
-#### a. kuka_experimental
+#### kuka_kvp_command_interface
 
-**Importance:**  getting the KUKA KR6 files e.g. URDF files used for robot_description
+**Importance:** This is the package of interest; allows you to send commands to the robot arm via KVP.
 
-```bash
-cd robot_ws/src
-git clone https://github.com/ros-industrial/kuka_experimental.git
-rosdep install -y --from-paths . --ignore-src
-
-```
-
-#### b. kuka_kvp_hw_interface
-
-**Importance:** getting access to the robot's joint states
-
-```bash
-git clone https://github.com/itk-thrivaldi/kuka_kvp_hw_interface
-rosdep install -y --from-paths . --ignore-src
-
-# Remember to Edit params.yaml to your robot's IP Address
-```
-- Ensure that you've edited the `params.yaml` file in the `kuka_kvp_hw_interface/config/` directory to include your robot's IP address.
-	- For example: Change from the default address **`10.0.0.1`** to **`172.31.1.147`**
-
-#### c. kuka_kvp_command_interface
-
-**Importance:** This is the package of interest.
 
 ```bash
 cd robot_ws/src
@@ -169,10 +148,11 @@ To use the package and its dependencies, you need to run several commands in dif
 
 ## License
 
-- 
+- BSD
 
 ## Contact
 
 - **Maintainer: Lenny Ng'an'ga** 
 	- X (formerly Twitter): [@codewithlenny](https://x.com/@codewithlenny)
 	- LinkedIn: [Lenny Ng'ang'a](https://www.linkedin.com/in/lenny-nganga-wanjiru/)
+   - Email: codewithlennylen254@gmail.com

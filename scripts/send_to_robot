@@ -3,6 +3,7 @@
 
 import rospy
 from std_msgs.msg import String
+from sensor_msgs.msg import JointState
 import socket                                                   # Used for TCP/IP communication
 
 
@@ -122,7 +123,7 @@ robot = KUKA(ROBOT_IP)
 # Callback function; sends data from the subscribed topic to the robot
 def callback_fn(subscribedData):
     
-    joint_info = subscribedData.data
+    joint_info = subscribedData.position
     robot.write(KVP_COMMAND_VARIABLE, joint_info)
     rospy.loginfo(f'Sending to robot: {joint_info}')
 
@@ -134,7 +135,7 @@ def send_to_robot():
     rospy.init_node('kvp_command_node', anonymous=False)
     
     #This is to subscribe to the messages from the topic named 'robotCoordinates'
-    rospy.Subscriber('robotCoordinates', String, callback_fn)
+    rospy.Subscriber('/solved_joint_states', JointState, callback_fn)
     
     #rospy.spin() stops the node from exiting until the node has been shut down
     rospy.spin()

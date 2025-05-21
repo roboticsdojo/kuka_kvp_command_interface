@@ -126,12 +126,12 @@ To use the package and its dependencies, you need to run several commands in dif
 
 4. Get live joint states from the arm:
    ```bash
-   roslaunch kuka_kvp_hw_interface test_joint_trajectory_interface.launch
+   
    ```
 
 5. Visualize the robot's movements:
    ```bash
-   rviz
+   
    ```
 - In RViz, set the map to base
 - Click Plugins: add TF and Robot Model

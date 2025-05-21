@@ -160,7 +160,6 @@ include_directories(
 ## Mark executable scripts (Python etc.) for installation
 ## in contrast to setup.py, you can choose the destination
 catkin_install_python(PROGRAMS
-  # scripts/format_kvp_msg
   scripts/send_to_robot
   scripts/simulate_coordinates
   scripts/simulate_coordinates_world

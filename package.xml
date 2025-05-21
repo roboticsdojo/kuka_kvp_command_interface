@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package format="2">
   <name>kuka_kvp_command_interface</name>
-  <version>0.0.0</version>
+  <version>0.2.0</version>
   <description>This interface allows for direct command of the KUKA robot via KVP</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag -->

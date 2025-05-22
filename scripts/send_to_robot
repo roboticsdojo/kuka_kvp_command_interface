@@ -211,11 +211,11 @@ def format_linear_position(position: list, rotation: list):
         else:
             formatted_torch_action = "OFF"
         
-        formated_linear_position = "{POS: X " + f"{X}," + " Y " + f"{Y}," + " Z "+f"{Z}," + " A " + f"{A}," + " B " + f"{B}," + " C " + f"{C}" + "}"
+        formatted_linear_position = "{POS: X " + f"{X}," + " Y " + f"{Y}," + " Z "+f"{Z}," + " A " + f"{A}," + " B " + f"{B}," + " C " + f"{C}" + "}"
         
         
-        # print(f"formated_linear_position - (torch_action): {formated_linear_position} - ({formatted_torch_action})")
-        return (formated_linear_position, linear_velocity, formatted_torch_action)
+        # print(f"formatted_linear_position - (torch_action): {formatted_linear_position} - ({formatted_torch_action})")
+        return (formatted_linear_position, linear_velocity, formatted_torch_action)
 
     else:
         print("No data")

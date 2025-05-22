@@ -443,7 +443,7 @@ def send_to_robot():
     torch_command_publisher = rospy.Publisher('/torch', String, queue_size=50)
     
     #This is to subscribe to the messages from the topic named 'robotCoordinates'
-    # rospy.Subscriber('robotCoordinates', String, callback_fn)
+    
     rospy.Subscriber('/solved_joint_states', JointState, joint_command_callback_fn, queue_size=50)
     
     

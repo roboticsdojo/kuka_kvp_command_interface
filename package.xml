@@ -2,10 +2,10 @@
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>kuka_kvp_command_interface</name>
-  <version>0.0.0</version>
-  <description>TODO: Package description</description>
-  <maintainer email="codewithlennylen254@gmail.com">lenny</maintainer>
-  <license>TODO: License declaration</license>
+  <version>0.2.1</version>
+  <description>This ROS2 package provides an interface for the KUKA Agilus KR6 R900-2 robot arm. It enables users to programmatically control the arm, facilitating the development of complex automation scripts and programs within the ROS ecosystem. The package is based on the KVP (KUKA Variable Protocol) for communication with the robot controller</description>
+  <maintainer email="codewithlennylen254@gmail.com">Lenny Ng'ang'a</maintainer>
+  <license>MIT</license>
 
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>

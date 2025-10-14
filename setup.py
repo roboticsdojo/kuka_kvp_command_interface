@@ -4,7 +4,7 @@ package_name = 'kuka_kvp_command_interface'
 
 setup(
     name=package_name,
-    version='0.1.0',
+    version='0.2.1',
     packages=find_packages(exclude=['test']),
     data_files=[
         ('share/ament_index/resource_index/packages',
@@ -13,14 +13,14 @@ setup(
     ],
     install_requires=['setuptools'],
     zip_safe=True,
-    maintainer='ru3ll',
-    maintainer_email='brian.macharia.wambui@gmail.com',
-    description='ROS2 package interface to interact with kuka_kr6_r9002 robot',
+    maintainer='Lenny Ng\'ang\'a',
+    maintainer_email='codewithlennylen254@gmail.com',
+    description='This ROS2 package provides an interface for the KUKA Agilus KR6 R900-2 robot arm. It enables users to programmatically control the arm, facilitating the development of complex automation scripts and programs within the ROS ecosystem. The package is based on the KVP (KUKA Variable Protocol) for communication with the robot controller',
     license='MIT',
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'send_to_robot= Scripts.send_to_robot_v3:main',
+            'kuka_kvp_interface = kuka_kvp_command_interface.kuka_kvp_interface:main',
         ],
     },
 )

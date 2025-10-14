@@ -1,0 +1,81 @@
+&ACCESS RVP
+&REL 2
+DEF waam_kvp_krl()
+
+  
+  ; Initialize movement parameters
+  BAS(#INITMOV,0)
+
+  ; Select the calibrated tool and base numbers
+  ; $BASE = BASE_DATA[2]    ; Activate Base 2 (TABLE)
+  ; $TOOL = TOOL_DATA[2]    ; Activate Tool 2 (TORCH)
+
+  ; Define and store base and tool frames BEFORE assignment
+  BASE_DATA[6] = {FRAME: X -37.56, Y -593.83, Z 689.10, A -89.98, B -0.84, C 0.02}
+  TOOL_DATA[2] = {FRAME: X -12.22, Y -19.46, Z 301.70, A 0, B 0, C 0}
+
+  ; Assign
+  $BASE = BASE_DATA[6]    ; Activate Base 6 (TABLE)
+  $TOOL = TOOL_DATA[2]    ; Activate Tool 2 (TORCH)
+  
+  ; Move to home position -> will be defined later
+  PTP $AXIS_ACT
+  
+  ; Basic configuration
+  $ORI_TYPE = #VAR
+  $CIRC_TYPE = #BASE
+  
+  ; Set orientation speeds - kept high for non-deposition movements
+  ; e.g. moving to home position (PTP)
+  $VEL.ORI1 = 200
+  $VEL.ORI2 = 200
+  $ACC.ORI1 = 100
+  $ACC.ORI2 = 100
+  
+  ; Set initial Cartesian velocities -> will be updated via KVP Client
+  $VEL.CP = WAAM_VEL
+  $ACC.CP = WAAM_ACC
+  
+  ; Define base and tool frames
+  ; $BASE = {FRAME: X 192.29, Y -589.97, Z 693.15, A -179.96, B 0.91, C 0.36}
+  ; $TOOL = {FRAME: X -6.04, Y -7.76, Z 291.29, A 0, B 0, C 0}
+    
+
+  ; BASE_DATA[2] = $BASE    ; Store frame in Base 2
+  ; TOOL_DATA[2] = $TOOL    ; Store frame in Tool 2
+
+
+  ; Ensure exact positioning
+  $ADVANCE = 0     ; Complete each motion before next, no incomplete movements
+  $APO.CPTP = 0    ; No approximate positioning (good for smooth motions but might be bad for WAAM)
+  $APO.CDIS = 0    ; No path approximation (good for smooth motions but might be bad for WAAM)
+  
+  ; Communication settings
+  COM_ROUNDM = -1
+  COM_ACTCNT = 0
+  
+  WHILE TRUE
+    MainLoop()
+  ENDWHILE
+END
+
+DEF MainLoop()
+    ; Approach position with PTP (no deposition)
+    ; How will I distinguish between deposition and non-deposition movements?
+    ; PTP COM_E6AXIS VEL=APPROACH_VEL
+    
+    ; Begin deposition path using linear movements
+    LIN WAAM_POS
+
+    ; Dynamically update Cartesian velocities -> (via KVP Client)
+    $VEL.CP = WAAM_VEL
+    $ACC.CP = WAAM_ACC
+
+
+    ; Intuitive Diagonal movement 
+    ; LIN {X 500, Y 0, Z 500}
+    ; LIN {X 300, Y 0, Z 700}
+    ; LIN {X 500, Y 0, Z 500}
+    ; LIN {X 500, Y 0, Z 700}
+
+END

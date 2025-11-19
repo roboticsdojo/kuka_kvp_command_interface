@@ -4,6 +4,7 @@ from std_msgs.msg import String
 from geometry_msgs.msg import PoseStamped
 from sensor_msgs.msg import JointState
 import socket
+import errno
 from collections import deque
 import time
 import numpy
@@ -29,10 +30,22 @@ class KUKA(object):
 
     def __init__(self, TCP_IP):
         try:
+            # Set socket timeout to prevent indefinite hanging
+            # 5 seconds is reasonable for local network connections
+            client.settimeout(5.0)
             # Open socket. kukavarproxy actively listens on TCP port 7000
             client.connect((TCP_IP, 7000))
-        except:
-            self.error_list(1)
+        except socket.timeout:
+            self.error_list(4, TCP_IP)
+        except OSError as e:
+            # Handle specific network errors
+            if e.errno == errno.ENETUNREACH:
+                self.error_list(5, TCP_IP)
+            elif e.errno == errno.ECONNREFUSED:
+                self.error_list(6, TCP_IP)
+            else:
+                # Generic network error
+                self.error_list(1, TCP_IP, e)
 
     def send(self, var, val, msgID):
         """
@@ -81,8 +94,8 @@ class KUKA(object):
             client.send(msg)
             # Return response with buffer size of 1024 bytes
             return client.recv(1024)
-        except:
-            self.error_list(1)
+        except Exception as e:
+            self.error_list(1, ROBOT_IP, e)
 
     def __get_var(self, msg):
         """
@@ -122,21 +135,54 @@ class KUKA(object):
         # CLose socket
         client.close()
 
-    def error_list(self, ID):
+    def error_list(self, ID, *args):
         if ID == 1:
-            print("Network Error (tcp_error)")
-            print(
-                "    Check your KRC's IP address on the network, and make sure the KVP Server is running.")
+            tcp_ip = args[0] if args else "unknown"
+            error_msg = args[1] if len(args) > 1 else None
+            print(f"[ERROR] [kuka_kvp_interface]: Network Error (tcp_error)")
+            print(f"    Failed to connect to {tcp_ip}:7000")
+            if error_msg:
+                print(f"    Details: {error_msg}")
+            print("    Check your KRC's IP address on the network, and make sure the KVP Server is running.")
             self.disconnect()
             raise SystemExit
         elif ID == 2:
-            print("Python Error.")
+            print("[ERROR] [kuka_kvp_interface]: Python Error.")
             print("    Update your python version >= 3.8.x.")
             self.disconnect()
             raise SystemExit
         elif ID == 3:
-            print("Error in write() statement.")
+            print("[ERROR] [kuka_kvp_interface]: Error in write() statement.")
             print("    Variable value is not defined.")
+        elif ID == 4:
+            tcp_ip = args[0] if args else "unknown"
+            print(f"[ERROR] [kuka_kvp_interface]: Connection timeout")
+            print(f"    Failed to connect to {tcp_ip}:7000 - Connection timed out after 5 seconds")
+            print("    Possible causes:")
+            print("      - KVP Server is not running on the KR C4 controller")
+            print("      - Firewall is blocking port 7000")
+            print("      - Incorrect IP address configured")
+            self.disconnect()
+            raise SystemExit
+        elif ID == 5:
+            tcp_ip = args[0] if args else "unknown"
+            print(f"[ERROR] [kuka_kvp_interface]: Network is unreachable")
+            print(f"    Cannot reach host {tcp_ip}")
+            print("    Possible causes:")
+            print("      - Host machine is not connected to the network")
+            print("      - Incorrect IP address or subnet configuration")
+            print("      - Network cable is disconnected")
+            self.disconnect()
+            raise SystemExit
+        elif ID == 6:
+            tcp_ip = args[0] if args else "unknown"
+            print(f"[ERROR] [kuka_kvp_interface]: Connection refused")
+            print(f"    KVP Server at {tcp_ip}:7000 refused the connection")
+            print("    Possible causes:")
+            print("      - KVP Server is not running on the KR C4 controller")
+            print("      - Port 7000 is blocked or not configured in NAT settings")
+            self.disconnect()
+            raise SystemExit
 
 
 robot = KUKA(ROBOT_IP)

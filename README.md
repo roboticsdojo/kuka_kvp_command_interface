@@ -231,23 +231,15 @@ ros2 run kuka_kvp_command_interface simulate_coordinates
 2. Visualize the robot's movements (live joint states)
 3. Simulate the Robot in gazebo
 
-  
-  
-  
-
 ## Troubleshooting
 
-  
-
 -
-
-  
 
 ## Contributing
 
-  
+Contributions are welcome! If you'd like to contribute to this project, please follow the guidelines outlined in the [CONTRIBUTING.md](CONTRIBUTING.md) file.
 
--
+Whether it's reporting bugs, suggesting new features, or submitting pull requests, your help is greatly appreciated. For major changes, please open an issue first to discuss what you would like to change.
 
 ## License
 
@@ -255,12 +247,9 @@ This project is licensed under the Apache License 2.0. You are free to use, modi
 
 For more details, see the [LICENSE](LICENSE) file in the repository or visit the [Apache 2.0 License](https://www.apache.org/licenses/LICENSE-2.0) page.
 
-
 ## Contact
-
-  
 
 -  **Maintainer: Lenny Ng'an'ga**
 - X (formerly Twitter): [@codewithlenny](https://x.com/@codewithlenny)
 - LinkedIn: [Lenny Ng'ang'a](https://www.linkedin.com/in/lenny-nganga-wanjiru/)
-- Email: codewithlennylen254@gmail.com
+- Email: <codewithlennylen254@gmail.com>

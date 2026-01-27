@@ -249,15 +249,12 @@ ros2 run kuka_kvp_command_interface simulate_coordinates
 
 -
 
-  
-
 ## License
 
-  
+This project is licensed under the Apache License 2.0. You are free to use, modify, and distribute this software under the terms of the license.
 
--
+For more details, see the [LICENSE](LICENSE) file in the repository or visit the [Apache 2.0 License](https://www.apache.org/licenses/LICENSE-2.0) page.
 
-  
 
 ## Contact
 
